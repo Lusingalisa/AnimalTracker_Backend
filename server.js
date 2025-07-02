@@ -2,6 +2,8 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const cattleRoutes = require('./routes/cattleRoutes');
+const userRoutes = require('./routes/userRoutes');
+
 require('dotenv').config();
 
 // Middleware
@@ -9,6 +11,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use('/api/cattle', cattleRoutes);
+app.use('/api/users',userRoutes);
 
 // Routes (to be implemented)
 app.get('/', (req, res) => res.send('Cattle Rustling Backend is running'));
