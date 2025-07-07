@@ -1,5 +1,14 @@
 const db = require('../config/db');
 
+const getAllUsers = async (req, res) => {
+  try {
+    const [results] = await db.execute('SELECT user_id, name, phone, branch_id FROM users');
+    res.json(results);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
+
 const getUser = (req, res) => {
   const { userId } = req.params;
   db.query('SELECT user_id, name, phone, branch_id FROM users WHERE user_id = ?', [userId], (err, result) => {
@@ -33,4 +42,4 @@ const deleteUser = (req, res) => {
   });
 };
 
-module.exports = { getUser, createUser, updateUser, deleteUser };
+module.exports = { getUser, createUser, updateUser, deleteUser, getAllUsers };
