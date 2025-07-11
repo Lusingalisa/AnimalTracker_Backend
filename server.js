@@ -6,6 +6,9 @@ const userRoutes = require('./routes/userRoutes');
 const alertRoutes = require('./routes/alertRoutes');
 const authRoutes = require('./routes/authRoutes');
 const branchRoutes = require('./routes/branchRoutes')
+const healthRoutes = require('./routes/healthRoutes');
+const geofenceRoutes = require('./routes/geofenceRoutes');
+
 
 require('dotenv').config();
 
@@ -18,6 +21,8 @@ app.use('/api/users',userRoutes);
 app.use('/api/alerts',alertRoutes);
 app.use('/api/auth',authRoutes);
 app.use('/api/branches',branchRoutes);
+app.use('/api/health', healthRoutes);
+app.use('/api/geofences', geofenceRoutes);
 
 // Routes (to be implemented)
 app.get('/', (req, res) => res.send('Cattle Rustling Backend is running'));

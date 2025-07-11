@@ -12,6 +12,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { getLocation, getAllCattle } = require('../controllers/cattleController');
+const { getCattleLocations } = require('../controllers/mapController');
 
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
@@ -29,5 +30,5 @@ const authenticateToken = (req, res, next) => {
 // Routes
 router.get('/location/:cattleId', authenticateToken, getLocation);
 router.get('/', authenticateToken, getAllCattle);
-
+router.get('/map-data', authenticateToken, getCattleLocations); 
 module.exports = router;
