@@ -73,4 +73,50 @@ const logout = (req, res) => {
   // For server-side logout, you'd need a token blacklist (e.g., using Redis), which is optional here
 };
 
-module.exports = { register, login, logout };
+const verify = async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).send('No token provided');
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const [result] = await db.execute(
+      'SELECT user_id, name, phone, branch_id FROM users WHERE user_id = ?',
+      [decoded.user_id]
+    );
+    if (!result.length) return res.status(404).send('User not found');
+    res.json({ user: result[0] });
+  } catch (err) {
+    res.status(401).send('Invalid token');
+  }
+};
+
+const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const { user_id } = req.user;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).send('Current and new password are required');
+  }
+
+  try {
+    // Get current password hash
+    const [result] = await db.execute('SELECT password FROM users WHERE user_id = ?', [user_id]);
+    if (!result.length) return res.status(404).send('User not found');
+
+    // Verify current password
+    const match = await bcrypt.compare(currentPassword, result[0].password);
+    if (!match) return res.status(401).send('Current password is incorrect');
+
+    // Hash new password
+    const hash = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    await db.execute('UPDATE users SET password = ? WHERE user_id = ?', [hash, user_id]);
+    
+    res.send('Password changed successfully');
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+};
+
+module.exports = { register, login, logout, verify, changePassword };

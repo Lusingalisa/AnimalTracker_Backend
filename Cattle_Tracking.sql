@@ -125,3 +125,37 @@ CREATE TABLE geofence_alerts (
 ALTER TABLE users ADD COLUMN geofence_alerts_enabled BOOLEAN DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN geofence_alert_method ENUM('app', 'sms', 'both') DEFAULT 'app';
 
+-- Insert geofence zones
+INSERT INTO geofence_zones (zone_id, user_id, zone_name, zone_type, zone_color) VALUES
+(1, 1, 'Main Pasture', 'pasture', '#28a745'),
+(2, 1, 'Danger Zone - River', 'danger', '#dc3545'),
+(3, 1, 'Restricted Area', 'restricted', '#ffc107');
+
+-- Insert coordinates for the geofences
+-- Main Pasture (large rectangular area)
+INSERT INTO geofence_coordinates (zone_id, latitude, longitude, sequence) VALUES
+(1, 3.220000, 31.750000, 0),
+(1, 3.220000, 31.770000, 1),
+(1, 2.200000, 31.770000, 2),
+(1, 2.200000, 31.750000, 3),
+(1, 3.220000, 31.750000, 4); -- Close the polygon
+
+-- Danger Zone - River (smaller polygon near the river)
+INSERT INTO geofence_coordinates (zone_id, latitude, longitude, sequence) VALUES
+(2, 2.240000, 31.180000, 0),
+(2, 2.240000, 31.190000, 1),
+(2, 2.230000, 31.190000, 2),
+(2, 2.230000, 31.180000, 3),
+(2, 2.240000, 31.180000, 4); -- Close the polygon
+
+-- Restricted Area (triangle shape)
+INSERT INTO geofence_coordinates (zone_id, latitude, longitude, sequence) VALUES
+(3, 3.215000, 31.755000, 0),
+(3, 3.225000, 31.765000, 1),
+(3, 3.205000, 31.765000, 2),
+(3, 3.215000, 31.755000, 3); -- Close the polygon
+
+ALTER TABLE geofence_alerts ADD COLUMN message TEXT;
+INSERT INTO geofence_alerts (cattle_id, zone_id, alert_type, timestamp, status, message) VALUES
+(1, 1, 'exit', '2025-07-14 13:18:00', 'resolved', 'Cow 004 exited Main Pasture (pasture zone)'),
+(2, 2, 'entry', '2025-07-14 13:18:00', 'active', 'Cow 005 entered Danger Zone - River (danger zone)');
