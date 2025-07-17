@@ -35,6 +35,23 @@ exports.recordMetrics = async (req, res) => {
       });
     }
 
+    // Insert health-specific alerts
+    if (alerts.length > 0) {
+      await db.query(
+        `INSERT INTO health_alerts 
+         (cattle_id, metric_id, alert_type, severity, message) 
+         VALUES ?`,
+        [alerts.map(a => [a.cattle_id, result.insertId, a.type === 'health' ? (a.message.includes('heart rate') ? 'heart_rate' : 'temperature') : 'unknown', a.message.includes('heart rate') && (heart_rate < 30 || heart_rate > 110) ? 'critical' : a.message.includes('body_temp') && (body_temp < 37.0 || body_temp > 40.0) ? 'critical' : 'warning', a.message])]
+      );
+      
+      if (alerts.some(a => a.message.includes('heart rate') && (heart_rate < 30 || heart_rate > 110) || a.message.includes('body_temp') && (body_temp < 37.0 || body_temp > 40.0))) {
+        await db.query(
+          `UPDATE cattle SET health_status = 'poor' WHERE cattle_id = ?`,
+          [cattle_id]
+        );
+      }
+    }
+
     // Insert any alerts
     if (alerts.length > 0) {
       await db.query(
