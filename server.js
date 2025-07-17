@@ -14,7 +14,9 @@ require('dotenv').config();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: "https://herdtrack.netlify.app"
+}));
 
 app.use('/api/cattle', cattleRoutes);
 app.use('/api/users',userRoutes);
