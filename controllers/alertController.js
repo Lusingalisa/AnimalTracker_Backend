@@ -1,61 +1,7 @@
-// const db = require('../config/db');
-// const textbelt = require('textbelt');
-
-// const getAlert = (req, res) => {
-//   const { alertId } = req.params;
-//   db.query('SELECT alert_id, cattle_id, timestamp, message, status FROM alerts WHERE alert_id = ?', [alertId], (err, result) => {
-//     if (err) return res.status(500).send(err);
-//     res.json(result[0] || {});
-//   });
-// };
-
-// // const createAlert = (req, res) => {
-// //   const { cattle_id, message } = req.body;
-// //   db.query('INSERT INTO alerts (cattle_id, message) VALUES (?, ?)', [cattle_id, message], (err, result) => {
-// //     if (err) return res.status(500).send(err);
-// //     res.status(201).json({ alert_id: result.insertId, cattle_id, message });
-// //   });
-// // };
-
-// const createAlert = async (req, res) => {
-//   try {
-//     const { cattle_id, message } = req.body;
-//     const [result] = await db.execute('INSERT INTO alerts (cattle_id, message) VALUES (?, ?)', [cattle_id, message]);
-
-//     // Get the user's phone number
-//     const [[user]] = await db.execute('SELECT phone FROM users WHERE user_id = (SELECT user_id FROM cattle WHERE cattle_id = ?)', [cattle_id]);
-//     if (user) {
-//       // Send SMS using Textbelt (free tier limited to 1 SMS/day)
-//       await textbelt.sendText(user.phone, `Alert: ${message}`, { apikey: 'textbelt' });
-//     }
-
-//     res.status(201).json({ alert_id: result.insertId, cattle_id, message });
-//   } catch (err) {
-//     res.status(500).send(err.message);
-//   }
-// };
-
-// const updateAlert = (req, res) => {
-//   const { alertId } = req.params;
-//   const { status } = req.body;
-//   db.query('UPDATE alerts SET status = ? WHERE alert_id = ?', [status, alertId], (err) => {
-//     if (err) return res.status(500).send(err);
-//     res.send('Alert updated');
-//   });
-// };
-
-// const deleteAlert = (req, res) => {
-//   const { alertId } = req.params;
-//   db.query('DELETE FROM alerts WHERE alert_id = ?', [alertId], (err) => {
-//     if (err) return res.status(500).send(err);
-//     res.send('Alert deleted');
-//   });
-// };
-
-// module.exports = { getAlert, createAlert, updateAlert, deleteAlert };
+// 
 
 const db = require('../config/db');
-const textbelt = require('textbelt');
+const WebSocket = require('../config/websocket'); // Add this line
 
 // Get a single alert by alert_id
 const getAlert = async (req, res) => {
@@ -80,7 +26,6 @@ const getAlert = async (req, res) => {
 // Get all alerts for the authenticated user's cattle
 const getAllAlerts = async (req, res) => {
   try {
-    console.log('Fetching alerts for user_id:', req.user.user_id);
     const [results] = await db.query(
       `SELECT 
         a.alert_id,
@@ -91,7 +36,8 @@ const getAllAlerts = async (req, res) => {
         c.rfid_tag
       FROM alerts a
       JOIN cattle c ON a.cattle_id = c.cattle_id
-      WHERE c.user_id = ?`,
+      WHERE c.user_id = ?
+      ORDER BY a.timestamp DESC`,
       [req.user.user_id]
     );
     res.json(results);
@@ -105,16 +51,27 @@ const getAllAlerts = async (req, res) => {
 const createAlert = async (req, res) => {
   try {
     const { cattle_id, message } = req.body;
-    const [result] = await db.execute('INSERT INTO alerts (cattle_id, message) VALUES (?, ?)', [cattle_id, message]);
+    const [result] = await db.execute(
+      'INSERT INTO alerts (cattle_id, message, status) VALUES (?, ?, "unread")',
+      [cattle_id, message]
+    );
 
-    // Get the user's phone number
-    const [[user]] = await db.execute('SELECT phone FROM users WHERE user_id = (SELECT user_id FROM cattle WHERE cattle_id = ?)', [cattle_id]);
-    if (user) {
-      // Send SMS using Textbelt (free tier limited to 1 SMS/day)
-      await textbelt.sendText(user.phone, `Alert: ${message}`, { apikey: 'textbelt' });
-    }
+    // Get the full alert details
+    const [[alert]] = await db.query(
+      `SELECT a.*, c.rfid_tag 
+       FROM alerts a
+       JOIN cattle c ON a.cattle_id = c.cattle_id
+       WHERE a.alert_id = ?`,
+      [result.insertId]
+    );
 
-    res.status(201).json({ alert_id: result.insertId, cattle_id, message });
+    // Broadcast to WebSocket clients
+    WebSocket.broadcast({
+      type: 'NEW_ALERT',
+      data: alert
+    });
+
+    res.status(201).json(alert);
   } catch (err) {
     console.error('Error creating alert:', err);
     res.status(500).send('Failed to create alert');

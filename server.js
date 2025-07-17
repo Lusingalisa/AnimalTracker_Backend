@@ -8,7 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const branchRoutes = require('./routes/branchRoutes')
 const healthRoutes = require('./routes/healthRoutes');
 const geofenceRoutes = require('./routes/geofenceRoutes');
-
+const WebSocket = require('ws');
 
 require('dotenv').config();
 
@@ -31,3 +31,17 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+const wss = new WebSocket.Server({ port: 5000 });
+wss.on('connection', (ws) => {
+  console.log('WebSocket client connected');
+  ws.on('close', () => console.log('WebSocket client disconnected'));
+});
+// Broadcast new alerts
+function broadcastAlert(alert) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'geofence_breach', ...alert }));
+    }
+  });
+}
