@@ -13,11 +13,8 @@ const WebSocket = require('ws');
 require('dotenv').config();
 
 // Middleware
-app.use(cors({
-  origin: "https://herdtrack.netlify.app",
-  methods: ['GET', 'POST', 'OPTIONS'], // Explicitly allow OPTIONS
-  allowedHeaders: ['Content-Type', 'Authorization'] // Allow common headers
-}));
+app.use(express.json());
+app.use(cors());
 
 app.use('/api/cattle', cattleRoutes);
 app.use('/api/users',userRoutes);
@@ -31,11 +28,11 @@ app.use('/api/geofences', geofenceRoutes);
 app.get('/', (req, res) => res.send('Cattle Rustling Backend is running'));
 
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ port: 5000 });
 wss.on('connection', (ws) => {
   console.log('WebSocket client connected');
   ws.on('close', () => console.log('WebSocket client disconnected'));
