@@ -13,9 +13,10 @@ const WebSocket = require('ws');
 require('dotenv').config();
 
 // Middleware
-app.use(express.json());
 app.use(cors({
-  origin: "https://herdtrack.netlify.app"
+  origin: "https://herdtrack.netlify.app",
+  methods: ['GET', 'POST', 'OPTIONS'], // Explicitly allow OPTIONS
+  allowedHeaders: ['Content-Type', 'Authorization'] // Allow common headers
 }));
 
 app.use('/api/cattle', cattleRoutes);
