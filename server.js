@@ -30,11 +30,11 @@ app.use('/api/geofences', geofenceRoutes);
 app.get('/', (req, res) => res.send('Cattle Rustling Backend is running'));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-const wss = new WebSocket.Server({ port: 5000 });
+const wss = new WebSocket.Server({ server });
 wss.on('connection', (ws) => {
   console.log('WebSocket client connected');
   ws.on('close', () => console.log('WebSocket client disconnected'));
