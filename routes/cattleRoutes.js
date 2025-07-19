@@ -31,4 +31,6 @@ const authenticateToken = (req, res, next) => {
 router.get('/location/:cattleId', authenticateToken, getLocation);
 router.get('/', authenticateToken, getAllCattle);
 router.get('/map-data', authenticateToken, getCattleLocations); 
+router.post('/map-data', authenticateToken, getCattleLocations);
+router.get('/map-data', authenticateToken, getCattleLocations);
 module.exports = router;

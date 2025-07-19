@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/Lusingalisa/AnimalTracker_Backend#readme",
   "dependencies": {
+    "@faker-js/faker": "^9.9.0",
     "@turf/turf": "^7.2.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",

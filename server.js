@@ -15,6 +15,7 @@ require('dotenv').config();
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use(express.static('public')); // Serve files from the public folder
 
 app.use('/api/cattle', cattleRoutes);
 app.use('/api/users',userRoutes);
@@ -24,6 +25,7 @@ app.use('/api/branches',branchRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/geofences', geofenceRoutes);
 
+
 // Routes (to be implemented)
 app.get('/', (req, res) => res.send('Cattle Rustling Backend is running'));
 
@@ -32,11 +34,12 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-const wss = new WebSocket.Server({ port: 5000 });
-wss.on('connection', (ws) => {
-  console.log('WebSocket client connected');
-  ws.on('close', () => console.log('WebSocket client disconnected'));
+const wss = new WebSocket.Server({ 
+  port: 5000,
+  path: '/ws' // Explicit path
 });
+
+console.log('WebSocket server running on ws://localhost:5000/ws');
 // Broadcast new alerts
 function broadcastAlert(alert) {
   wss.clients.forEach((client) => {

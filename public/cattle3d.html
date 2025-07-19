@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Cattle Simulation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { width: 100%; height: 100vh; }
+    </style>
+</head>
+<body>
+    <script>
+        // Three.js setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Create a simple cow (cube for body, cylinders for legs)
+        const geometry = new THREE.BoxGeometry(1, 1, 1); // Body
+        const material = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown color
+        const cow = new THREE.Mesh(geometry, material);
+        scene.add(cow);
+
+        // Add legs (simplified)
+        const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5);
+        for (let i = 0; i < 4; i++) {
+            const leg = new THREE.Mesh(legGeometry, material);
+            leg.position.set(i % 2 === 0 ? -0.5 : 0.5, -0.5, i < 2 ? -0.3 : 0.3);
+            cow.add(leg);
+        }
+
+        // Position camera
+        camera.position.z = 5;
+
+        // Animation and simulation
+        const cattleIds = ["1", "2", "3", "4", "5"];
+        const statuses = ["safe", "alerted", "stolen"];
+        const BASE_URL = "http://localhost:3000/api";
+        const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJwaG9uZSI6IjA3NzMyNjU1MzAiLCJpYXQiOjE3NTI5MjA2NzEsImV4cCI6MTc1MjkyNDI3MX0.OVnSlMo7Bc4Rj14q7VEnJr5ILdbbx3LgQJiuV3ZHQ3A";
+
+        function simulate() {
+            requestAnimationFrame(simulate);
+
+            // Move cow
+            cow.rotation.y += 0.01;
+            cow.position.x = Math.sin(Date.now() * 0.001) * 2;
+            cow.position.z = Math.cos(Date.now() * 0.001) * 2;
+
+            // Send data to backend
+            cattleIds.forEach(cattleId => {
+                const latitude = cow.position.x + Math.random() * 0.1 - 0.05;
+                const longitude = cow.position.z + Math.random() * 0.1 - 0.05;
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                const last_updated = new Date().toISOString();
+
+                // Update location
+                fetch(`${BASE_URL}/cattle/map-data`, {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${TOKEN}` },
+                    params: { cattle_id: cattleId, latitude, longitude, status, last_updated }
+                }).catch(err => console.log(`GPS update failed for ${cattleId}:`, err));
+
+                // Check geofence
+                fetch(`${BASE_URL}/geofences/check-position`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+                    body: JSON.stringify({ cattle_id: cattleId, latitude, longitude })
+                }).catch(err => console.log(`Geofence check failed for ${cattleId}:`, err));
+
+                // Create alert if not safe
+                if (status !== "safe") {
+                    fetch(`${BASE_URL}/alerts`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+                        body: JSON.stringify({ cattle_id: cattleId, message: `${status} detected for ${cattleId}` })
+                    }).catch(err => console.log(`Alert creation failed for ${cattleId}:`, err));
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        simulate();
+    </script>
+</body>
+</html>
