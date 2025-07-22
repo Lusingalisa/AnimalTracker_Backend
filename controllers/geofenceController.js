@@ -291,3 +291,18 @@ async function sendTextBeltSMS(phoneNumber, message) {
     throw error;
   }
 }
+
+// Add this new method to geofenceController.js
+exports.acknowledgeAlert = async (req, res) => {
+  try {
+    const { alert_id } = req.params;
+    await db.query(
+      `UPDATE geofence_alerts SET status = 'acknowledged' WHERE alert_id = ?`,
+      [alert_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error acknowledging alert:', err);
+    res.status(500).send('Failed to acknowledge alert');
+  }
+};
